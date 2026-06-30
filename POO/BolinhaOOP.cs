@@ -4,7 +4,7 @@ using UnityEngine;
 /// acoplados pela herança de MonoBehaviour.
 public class BolinhaFisicaOOP : MonoBehaviour
 {
-    // ── DADOS (estado do objeto) ──────────────────────────────
+
     // Campo público para permitir inicialização externa pelo SpawnerOOP
     [HideInInspector] public Vector3 velocidade;
 
@@ -16,7 +16,6 @@ public class BolinhaFisicaOOP : MonoBehaviour
 
     private Transform _transform;
 
-    // ── CICLO DE VIDA
 
     private void Awake()
     {
@@ -24,19 +23,18 @@ public class BolinhaFisicaOOP : MonoBehaviour
         _transform = transform;
     }
 
-    /// <summary>
+
     /// Executado TODA frame pelo engine, para CADA instância de BolinhaFisicaOOP.
     /// Custo: O(n) chamadas individuais, onde n = número de bolinhas ativas.
     /// Cada chamada é gerenciada e não pode ser paralelizada pelo Unity automaticamente.
-    /// </summary>
     private void Update()
     {
         float dt = Time.deltaTime;
 
-        // 1. Integração de Euler semi-implícita: atualiza velocidade com a aceleração
+        // 1. Integração de Euler
         velocidade.y += Gravidade * dt;
 
-        // 2. Atualiza posição com a velocidade resultante
+        // 2. Atualiza posição com a velocidade 
         _transform.position += velocidade * dt;
 
         // 3. Detecção e resposta de colisão com o plano y = 0
