@@ -1,28 +1,16 @@
-// =============================================================
-// SpawnerSystem.cs  —  Paradigma: ECS (Entity Component System)
-// Sistema one-shot: instancia N entidades e se desativa automaticamente.
-// Compatível com: Unity DOTS 1.x (Entities 1.0+)
-// =============================================================
-// CONTRASTE COM SpawnerOOP:
-//   - SpawnerOOP acessa diretamente campos de BolinhaFisicaOOP (CBO alto)
-//   - SpawnerSystem não conhece FisicaSystem nem DadosFisica de forma direta;
-//     apenas configura os componentes via EntityCommandBuffer (CBO baixo)
-//   - Após spawnar, a entidade spawner é destruída → sem polling desnecessário
-// =============================================================
-
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-/// <summary>
+
 /// Sistema responsável por criar N entidades bolinha a partir do prefab ECS.
-/// Executa uma única vez: destrói a entidade DadosSpawner após o spawn.
+/// Executa uma única vez e destrói a entidade DadosSpawner após o spawn.
 ///
 /// Ordem de execução: InitializationSystemGroup garante que as entidades
 /// sejam criadas antes de FisicaSystem rodar no mesmo frame.
-/// </summary>
+
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 [BurstCompile]
 public partial struct SpawnerSystem : ISystem
@@ -34,23 +22,21 @@ public partial struct SpawnerSystem : ISystem
         state.RequireForUpdate<DadosSpawner>();
     }
 
-    /// <summary>
+
     /// Roda apenas enquanto existir ao menos uma entidade DadosSpawner.
-    /// Após destruir essa entidade, RequireForUpdate desativa o sistema.
-    /// </summary>
+
     [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
         // EntityCommandBuffer: registra operações estruturais (Instantiate, SetComponent,
-        // DestroyEntity) para execução segura fora dos jobs Burst.
-        // Allocator.Temp: liberado automaticamente ao final do frame.
+        // DestroyEntity)
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.Temp);
 
-        // Semente determinística baseada no tempo decorrido
+        // Seed baseada no tempo decorrido
         uint semente = (uint)(SystemAPI.Time.ElapsedTime * 10000.0 + 1);
         Random rng = Random.CreateFromIndex(semente);
 
-        // Itera sobre todas as entidades com DadosSpawner (tipicamente apenas 1)
+        // Itera sobre todas as entidades com DadosSpawner
         foreach (var (spawner, entidadeSpawner) in
                  SystemAPI.Query<RefRO<DadosSpawner>>().WithEntityAccess())
         {
@@ -58,7 +44,7 @@ public partial struct SpawnerSystem : ISystem
 
             for (int i = 0; i < cfg.Quantidade; i++)
             {
-                // Instancia uma cópia do prefab via ECB (thread-safe, Burst-friendly)
+                // Instancia uma cópia do prefab via ECB
                 Entity nova = ecb.Instantiate(cfg.Prefab);
 
                 // Define posição inicial aleatória
@@ -69,7 +55,7 @@ public partial struct SpawnerSystem : ISystem
                 );
                 ecb.SetComponent(nova, LocalTransform.FromPosition(posicao));
 
-                // Define velocidade inicial: horizontal aleatória, vertical zero
+                // Define velocidade inicial
                 ecb.SetComponent(nova, new DadosFisica
                 {
                     Velocidade = new float3(
@@ -83,7 +69,7 @@ public partial struct SpawnerSystem : ISystem
                 });
             }
 
-            // Destrói a entidade spawner — esta é a última ação deste sistema
+            // Destrói a entidade spawner
             ecb.DestroyEntity(entidadeSpawner);
         }
 
